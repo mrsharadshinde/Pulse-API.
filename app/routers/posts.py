@@ -48,7 +48,7 @@ def get_posts(
     query = db.query(post_model.Posts, func.count(vote_model.Vote.post_id).label("votes")) \
         .join(vote_model.Vote, vote_model.Vote.post_id == post_model.Posts.id, isouter=True) \
         .group_by(post_model.Posts.id) \
-        .filter(post_model.Posts.title.contains(search))
+        .filter(post_model.Posts.title.icontains(search))
 
     if sort.lower() == "asc":
         query = query.order_by(post_model.Posts.id.asc())

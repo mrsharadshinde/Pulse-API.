@@ -1,7 +1,8 @@
-from fastapi import Depends, HTTPException, status, APIRouter
+from fastapi import Depends, HTTPException, status, APIRouter, Request
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from app.utils import limiter
 from app.Database.database import get_db
 from app.Database import  user_model
 from app import utils, oauth2
@@ -12,7 +13,8 @@ router = APIRouter(
 )
 
 @router.post("/login", response_model=user_schema.Token)
-def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login( request: Request, user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
 
     #look for the user by email
     #Note : OAuth2PasswordRequestForm always store the user email in variable called username

@@ -9,7 +9,6 @@ from app.schema.user_schema import UserResponse
 class PostBase(BaseModel):
     title: Annotated[str, Field(..., alias='title', description='The title of the post')]
     content: Annotated[str, Field(..., description='The content of the post')]
-    ratings: Optional[Annotated[int, Field(description='The rating of the post')]] = None
     published: Annotated[bool, Field(default=True, description='Whether or not the post is published')]
     @field_validator('title', 'content')
     @classmethod
@@ -30,7 +29,6 @@ class UpdatePost(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     published: Optional[bool] = None
-    ratings: Optional[int] = None
 
 
 # 4. POST RESPONSE: Inherits the foundation + adds database fields (No 'published'!)

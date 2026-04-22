@@ -8,6 +8,7 @@ from app.Database.user_model import Users
 from app.Database.post_model import Posts
 from app import utils
 from datetime import datetime
+from app import oauth2
 
 #set prefix and tag for router
 router = APIRouter(
@@ -58,22 +59,28 @@ def get_all_users(
     users = query.limit(limit).offset(skip).all()
     return users
 
-@router.patch("/{id}", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
-def update_user(id:int, userData: UpdateUser, db: Session = Depends(get_db)):
+@router.patch("/{id}", status_code=status.HTTP_200_OK, response_model=UserResponse)
+def update_user(id:int,
+                userData: UpdateUser,
+                db: Session = Depends(get_db),
+                current_user: int = Depends(oauth2.get_current_user)):
     db_query = db.query(Users).filter(Users.id == id)
     db_user = db_query.first()
     if not db_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    hashed_password = utils.hash_password(userData.password)
-    userData.password = hashed_password
     updated_user = userData.model_dump(exclude_unset=True)
+    if "password" in updated_user:
+        updated_user["password"] = utils.hash_password(userData.password)
+
     updated_user['updated_at'] = datetime.now()
     db_query.update(updated_user, synchronize_session=False)
     db.commit()
     return db_query.first()
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(id:int, db: Session = Depends(get_db)):
+def delete_user(id:int,
+                db: Session = Depends(get_db),
+                current_user: int = Depends(oauth2.get_current_user)):
     db_query = db.query(Users).filter(Users.id == id)
     user = db_query.first()
     if not user:
