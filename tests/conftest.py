@@ -6,7 +6,9 @@ from sqlalchemy import create_engine
 from app.main import app
 from app.config import settings
 from app.Database.database import get_db, Base
+from app.utils import limiter
 
+limiter.enabled = False
 #1. Create the Test Database URL
 TEST_DATABASE_URL = f"postgresql://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}_test"
 engine = create_engine(TEST_DATABASE_URL)
@@ -56,3 +58,36 @@ def test_user(client):
     new_user['password'] = user_data['password']
 
     return new_user
+
+#---------------------------- for POST CRUD & Voting unit Test
+@pytest.fixture
+def token(test_user, client):
+    res = client.post(
+        "/login",
+        data={"username": test_user["email"], "password": test_user["password"]},
+    )
+    return res.json()["access_token"]
+
+
+@pytest.fixture
+def authorized_client(client, token):
+    # 1. Create a completely separate fake browser
+    new_client = TestClient(app)
+
+    # 2. Attach the token ONLY to this new browser
+    new_client.headers = {
+        **new_client.headers,
+        "Authorization": f"Bearer {token}"
+    }
+
+    return new_client
+
+@pytest.fixture
+def test_post(authorized_client):
+    res = authorized_client.post(
+        "/posts/", json={
+            "title": "Test Post for Voting",
+            "content": "This post is ready to be voted on.",
+            "published": True
+        })
+    return res.json()
